@@ -1,6 +1,8 @@
 // Minimal Upstash/Vercel-KV REST client (no dependencies).
-const URL_ = () => process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN = () => process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+// Vercel adds these with a prefix you can choose when connecting storage (KV_, STORAGE_, ...), so match any prefix.
+const env = (re) => { const k = Object.keys(process.env).find((n) => re.test(n)); return k ? process.env[k] : undefined; };
+const URL_ = () => env(/(^|_)(KV_REST_API_URL|UPSTASH_REDIS_REST_URL)$/);
+const TOKEN = () => env(/(^|_)(KV_REST_API_TOKEN|UPSTASH_REDIS_REST_TOKEN)$/);
 
 async function cmd(...args) {
   if (!URL_() || !TOKEN()) throw new Error('storage_not_configured');
