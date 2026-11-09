@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lyle's Bakery – Order donuts in Cape Town</title>
+<meta name="description" content="Order a box of fresh Lyle's donuts. 4, 6 or 12 boxes, delivered or collected in Cape Town.">
+<meta name="theme-color" content="#D93A2B">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/kaushan-script-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="hero">
+  <img src="/logo.svg" alt="Lyle's Bakery, est. 2026" width="490" height="450">
+  <p class="tag">Fresh donuts &middot; Cape Town</p>
+</header>
+
+<main class="wrap">
+  <h1 class="sr">Order Lyle's Bakery donuts</h1>
+
+  <section id="view-loading" class="card center" aria-live="polite"><p class="eyebrow">Loading the oven&hellip;</p></section>
+
+  <section id="view-error" class="card center" hidden>
+    <p class="eyebrow">Something went wrong</p>
+    <p>We couldn't load the order page. Please refresh in a minute.</p>
+  </section>
+
+  <!-- ORDER FORM -->
+  <section id="view-order" hidden>
+    <div class="card batch">
+      <div><p class="eyebrow">Now baking</p><strong id="batch-label">Next batch</strong></div>
+      <span id="stock-pill" class="pill">Orders open</span>
+    </div>
+
+    <form id="order-form" class="card" novalidate>
+      <input class="hp" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+      <fieldset>
+        <legend>1. Pick your box</legend>
+        <div class="choices three" id="box-grid"></div>
+        <span class="err" id="err-size" role="alert"></span>
+      </fieldset>
+
+      <label class="f" id="qty-wrap">
+        <span>How many boxes?</span>
+        <select name="qty" id="qty"></select>
+        <span class="err" id="err-qty" role="alert"></span>
+      </label>
+
+      <div class="summary" id="summary" aria-live="polite">Choose a box to get started</div>
+
+      <fieldset>
+        <legend>2. Your details</legend>
+        <label class="f" id="f-name"><span>Name</span><input type="text" name="name" autocomplete="name" maxlength="80" required><span class="err" id="err-name" role="alert"></span></label>
+        <label class="f" id="f-email"><span>Email</span><input type="email" name="email" autocomplete="email" inputmode="email" maxlength="254" required><span class="err" id="err-email" role="alert"></span></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>3. Delivery or collection</legend>
+        <div class="choices two">
+          <label class="choice"><input type="radio" name="method" value="delivery"><span class="face"><span class="big">Delivery</span></span></label>
+          <label class="choice"><input type="radio" name="method" value="collection"><span class="face"><span class="big">Collection</span></span></label>
+        </div>
+        <span class="err" id="err-method" role="alert"></span>
+        <p class="note" style="margin-top:14px;margin-bottom:0">Delivery and collection are available in <b>Cape Town and its suburbs only</b>.</p>
+      </fieldset>
+
+      <div id="delivery-fields" hidden>
+        <label class="f" id="f-street"><span>Street address</span><input type="text" name="street" autocomplete="address-line1" maxlength="120"><span class="err" id="err-street" role="alert"></span></label>
+        <label class="f"><span>Complex / unit <small>(optional)</small></span><input type="text" name="complex" autocomplete="address-line2" maxlength="80"></label>
+        <div class="row2">
+          <label class="f" id="f-suburb"><span>Suburb</span><select name="suburb" id="suburb"><option value="">Choose your suburb</option></select><span class="err" id="err-suburb" role="alert"></span></label>
+          <label class="f"><span>City</span><input type="text" value="Cape Town" readonly tabindex="-1" aria-readonly="true"></label>
+        </div>
+        <label class="f"><span>Delivery notes <small>(optional)</small></span><input type="text" name="instructions" maxlength="200" placeholder="Gate code, leave with security, etc."></label>
+      </div>
+      <p class="note" id="collection-note" hidden></p>
+
+      <p class="form-err" id="form-err" role="alert" hidden></p>
+      <button class="btn" type="submit" id="submit">Place order</button>
+    </form>
+  </section>
+
+  <!-- SOLD OUT -->
+  <section id="view-soldout" class="card soldout center" hidden>
+    <p class="eyebrow">This batch is done</p>
+    <h2><span class="tilt">Orders are all sold&nbsp;out</span></h2>
+    <p class="lead">Sign up to get an alert when the next batch is available for order.</p>
+    <form id="wait-form" novalidate>
+      <input class="hp" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <label class="f" id="w-email"><span>Email</span><input type="email" name="email" autocomplete="email" inputmode="email" maxlength="254" placeholder="you@example.com"><span class="err" id="err-w-email" role="alert"></span></label>
+      <label class="f" id="w-phone"><span>WhatsApp number</span><input type="tel" name="phone" autocomplete="tel" inputmode="tel" maxlength="30" placeholder="082 123 4567"><span class="err" id="err-w-phone" role="alert"></span></label>
+      <p class="form-err" id="wait-err" role="alert" hidden></p>
+      <button class="btn" type="submit" id="wait-submit">Alert me</button>
+    </form>
+    <div id="wait-done" class="thanks" hidden>
+      <h2><span class="tilt">You're on the list!</span></h2>
+      <p>We'll message you as soon as the next batch opens.</p>
+    </div>
+  </section>
+
+  <!-- SUCCESS -->
+  <section id="view-success" class="card thanks center" hidden>
+    <p class="eyebrow">Order received</p>
+    <h2><span class="tilt">Thank you!</span></h2>
+    <span class="ref" id="ok-ref">LB-0000</span>
+    <p id="ok-detail"></p>
+    <p id="ok-note"></p>
+    <p style="margin-top:14px">A confirmation is on its way to <b id="ok-email"></b>.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="rule"></div>
+  Lyle's Bakery &middot; Est. 2026 &middot; Cape Town
+</footer>
+<script src="/app.js"></script>
+</body>
+</html>

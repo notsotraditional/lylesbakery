@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Lyle's – Admin</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body class="admin">
+<main class="wrap" style="padding-top:28px">
+  <h1>Lyle's admin</h1>
+
+  <form id="login" class="card">
+    <label class="f"><span>Password</span><input type="password" id="token" autocomplete="current-password" style="width:100%;font:500 18px Oswald;border:2.5px solid var(--red);border-radius:12px;padding:12px 14px;background:#FFFDF8"></label>
+    <p class="form-err" id="login-err" hidden></p>
+    <button class="btn" type="submit">Sign in</button>
+  </form>
+
+  <div id="dash" hidden>
+    <div class="card">
+      <p class="eyebrow">Current batch</p>
+      <p style="margin:0 0 4px"><strong id="b-label" style="font-size:24px;color:var(--red)">–</strong> <span class="pill" id="b-state">–</span></p>
+      <p style="margin:0 0 14px"><b id="b-rem">0</b> donuts left &middot; <b id="b-orders">0</b> orders &middot; <b id="b-waitlist">0</b> on waitlist</p>
+      <div class="btns">
+        <button class="btn small ghost" id="toggle-open"></button>
+        <button class="btn small ghost" id="set-rem">Change donuts left</button>
+        <button class="btn small ghost" id="refresh">Refresh</button>
+      </div>
+    </div>
+
+    <form id="open-form" class="card">
+      <h2 class="sec">Open a new batch</h2>
+      <div class="grid3">
+        <label class="f"><span>Batch name</span><input type="text" id="o-label" placeholder="Saturday 15 Nov" maxlength="60"></label>
+        <label class="f"><span>Total donuts</span><input type="text" id="o-cap" inputmode="numeric" placeholder="120"></label>
+      </div>
+      <p class="note">This starts a fresh batch with its own order list. The order form switches on straight away.</p>
+      <button class="btn" type="submit">Open batch</button>
+    </form>
+
+    <div class="card">
+      <h2 class="sec">Orders <span id="o-count"></span></h2>
+      <div class="scroll"><table><thead><tr><th>Ref</th><th>Name</th><th>Order</th><th>How</th><th>Email</th><th>Placed</th></tr></thead><tbody id="orders"></tbody></table></div>
+      <p id="no-orders" class="note" hidden>No orders in this batch yet.</p>
+      <div class="btns"><button class="btn small ghost" id="csv-orders">Download orders CSV</button></div>
+    </div>
+
+    <div class="card">
+      <h2 class="sec">Waitlist</h2>
+      <div class="scroll"><table><thead><tr><th>Email</th><th>WhatsApp</th><th>Signed up</th></tr></thead><tbody id="wait"></tbody></table></div>
+      <p id="no-wait" class="note" hidden>Nobody on the waitlist.</p>
+      <div class="btns">
+        <button class="btn small ghost" id="copy-wa">Copy WhatsApp numbers</button>
+        <button class="btn small ghost" id="csv-wait">Download CSV</button>
+        <button class="btn small ghost" id="notify">Email everyone</button>
+        <button class="btn small ghost" id="clear-wait">Clear list</button>
+      </div>
+      <p class="note" style="margin-top:14px">After you open a new batch, use <b>Email everyone</b> to alert the list, and <b>Copy WhatsApp numbers</b> to message them yourself. Clear the list once you're done so people only get one alert per batch.</p>
+    </div>
+    <p class="form-err" id="dash-err" hidden></p>
+  </div>
+</main>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  let token = sessionStorage.getItem('lyles-admin') || '', data = null;
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const when = (iso) => new Date(iso).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short' });
+
+  async function call(method, body) {
+    const r = await fetch('/api/admin', { method, headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j.error || 'Error'), { status: r.status });
+    return j;
+  }
+  const err = (m) => { const e = $('#dash-err'); e.textContent = m || ''; e.hidden = !m; };
+
+  function render(d) {
+    data = d;
+    const b = d.batch;
+    $('#b-label').textContent = b ? b.label : 'No batch yet';
+    const open = b && b.open && d.remaining >= 4;
+    const st = $('#b-state');
+    st.textContent = !b ? 'Not started' : b.open ? (d.remaining < 4 ? 'Sold out' : 'Open') : 'Closed';
+    st.classList.toggle('low', !open);
+    $('#b-rem').textContent = d.remaining;
+    $('#b-orders').textContent = d.orders.length;
+    $('#b-waitlist').textContent = d.waitlist.length;
+    $('#toggle-open').textContent = b && b.open ? 'Close orders' : 'Reopen orders';
+    $('#toggle-open').hidden = !b;
+    $('#orders').innerHTML = d.orders.slice().reverse().map((o) => `<tr><td><b>${esc(o.ref)}</b></td><td>${esc(o.name)}</td><td>${o.qty} × ${o.size}-box</td>
+      <td>${o.method === 'delivery' ? 'Delivery<br><small>' + esc([o.address.street, o.address.complex, o.address.suburb].filter(Boolean).join(', ')) + (o.address.instructions ? '<br>Note: ' + esc(o.address.instructions) : '') + '</small>' : 'Collection'}</td>
+      <td>${esc(o.email)}</td><td>${when(o.createdAt)}</td></tr>`).join('');
+    $('#no-orders').hidden = d.orders.length > 0;
+    $('#wait').innerHTML = d.waitlist.map((w) => `<tr><td>${esc(w.email) || '–'}</td><td>${esc(w.phone) || '–'}</td><td>${when(w.createdAt)}</td></tr>`).join('');
+    $('#no-wait').hidden = d.waitlist.length > 0;
+  }
+
+  async function load() {
+    try {
+      render(await call('GET'));
+      $('#login').hidden = true; $('#dash').hidden = false;
+    } catch (e) {
+      $('#dash').hidden = true; $('#login').hidden = false;
+      const le = $('#login-err'); le.textContent = e.status === 401 ? 'Wrong password.' : e.message; le.hidden = false;
+      sessionStorage.removeItem('lyles-admin');
+    }
+  }
+  async function act(body, okMsg) {
+    err('');
+    try { const r = await call('POST', body); render(r); if (okMsg) alert(okMsg(r)); } catch (e) { err(e.message); }
+  }
+  const csv = (rows) => rows.map((r) => r.map((c) => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+  function download(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = name; a.click(); }
+
+  $('#login').addEventListener('submit', (e) => { e.preventDefault(); token = $('#token').value; sessionStorage.setItem('lyles-admin', token); load(); });
+  $('#refresh').onclick = load;
+  $('#toggle-open').onclick = () => act({ action: 'setOpen', open: !(data.batch && data.batch.open) });
+  $('#set-rem').onclick = () => { const v = prompt('How many donuts are left to sell?', data.remaining); if (v !== null) act({ action: 'setRemaining', remaining: Number(v) }); };
+  $('#open-form').addEventListener('submit', (e) => { e.preventDefault(); act({ action: 'open', label: $('#o-label').value, capacity: Number($('#o-cap').value) }); });
+  $('#notify').onclick = () => { if (confirm('Email everyone on the waitlist that a new batch is open?')) act({ action: 'notify' }, (r) => `Emailed ${r.emailed} people.`); };
+  $('#clear-wait').onclick = () => { if (confirm('Clear the whole waitlist? This cannot be undone.')) act({ action: 'clearWaitlist' }); };
+  $('#copy-wa').onclick = async () => { const n = data.waitlist.map((w) => w.phone).filter(Boolean).join('\n'); try { await navigator.clipboard.writeText(n); alert(`Copied ${n ? n.split('\n').length : 0} numbers.`); } catch { prompt('Copy these numbers:', n.replace(/\n/g, ', ')); } };
+  $('#csv-wait').onclick = () => download('lyles-waitlist.csv', csv([['Email', 'WhatsApp', 'Signed up'], ...data.waitlist.map((w) => [w.email, w.phone, w.createdAt])]));
+  $('#csv-orders').onclick = () => download('lyles-orders.csv', csv([['Ref', 'Name', 'Email', 'Box', 'Qty', 'Donuts', 'Method', 'Street', 'Complex', 'Suburb', 'Notes', 'Total', 'Placed'], ...data.orders.map((o) => [o.ref, o.name, o.email, o.size, o.qty, o.donuts, o.method, o.address && o.address.street, o.address && o.address.complex, o.address && o.address.suburb, o.address && o.address.instructions, o.total, o.createdAt])]));
+  if (token) load();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "name": "lyles-bakery-orders",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Order site for Lyle's Bakery",
+  "engines": { "node": ">=18" }
+}
