@@ -20,14 +20,12 @@ a{color:var(--red)}
 .wrap{max-width:640px;margin:0 auto;padding:0 16px}
 
 /* hero */
-.hero{position:relative;text-align:center;padding:28px 16px 12px;overflow:hidden;border-bottom:3px solid var(--red)}
-.hero::before{content:"";position:absolute;inset:0;background:url(/pattern.svg) center top/340px repeat;opacity:.17}
-.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 70% at 50% 45%,var(--cream) 35%,rgba(242,238,227,0) 100%)}
-.hero>*{position:relative;z-index:1}
-.hero img{display:block;margin:0 auto;width:min(420px,84vw);height:auto}
-.tag{margin:6px 0 18px;text-transform:uppercase;letter-spacing:.28em;font-size:14px;font-weight:500}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:url(/pattern.svg) center top/340px repeat;opacity:.17;pointer-events:none}
+.hero{text-align:center;padding:16px 16px 0}
+.hero img{display:block;margin:0 auto;width:min(220px,50vw);height:auto}
+.tag{margin:4px 0 0;text-transform:uppercase;letter-spacing:.28em;font-size:13px;font-weight:500}
 
-main{padding:28px 0 48px}
+main{padding:40px 0 48px}
 .card{background:var(--paper);border:3px solid var(--red);border-radius:var(--radius);padding:22px 18px;margin-bottom:20px}
 .eyebrow{margin:0 0 4px;text-transform:uppercase;letter-spacing:.22em;font-size:13px;font-weight:500}
 .batch{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -103,3 +101,18 @@ footer .rule{width:140px;height:4px;background:var(--red);margin:0 auto 14px;bor
 .admin .btn.ghost:hover{background:var(--red);color:var(--cream)}
 .admin .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
 .admin .grid3{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* flavour picker */
+.pick-count{margin:0 0 12px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:15px;color:var(--red-deep)}
+.pick-count.done{color:var(--red)}
+.flavours{display:grid;gap:8px}
+.flavour{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px 8px 14px;border:2.5px solid var(--red);border-radius:14px;background:var(--cream)}
+.flavour.out{opacity:.5;border-style:dashed}
+.flavour .fname{font-weight:600;font-size:18px;color:var(--red);min-width:0}
+.flavour .fname small{display:block;font-weight:400;font-size:13px;letter-spacing:.06em;color:var(--red-deep)}
+.stepper{display:flex;align-items:center;gap:6px;flex:none}
+.stepper b{min-width:28px;text-align:center;font-size:20px;color:var(--red)}
+.stepper button{width:44px;height:44px;border-radius:50%;border:2.5px solid var(--red);background:var(--red);color:var(--cream);font:600 24px/1 Oswald,sans-serif;cursor:pointer;padding:0}
+.stepper button:disabled{background:transparent;color:var(--red);opacity:.35;cursor:not-allowed}
+.stepper button:focus-visible{outline:3px solid var(--red-deep);outline-offset:2px}
+.admin .stock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:6px}

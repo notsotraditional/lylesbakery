@@ -13,7 +13,6 @@
 <body>
 <header class="hero">
   <img src="/logo.svg" alt="Lyle's Bakery, est. 2026" width="490" height="450">
-  <p class="tag">Fresh donuts &middot; Cape Town</p>
 </header>
 
 <main class="wrap">
@@ -48,16 +47,23 @@
         <span class="err" id="err-qty" role="alert"></span>
       </label>
 
+      <fieldset id="flavour-wrap" hidden>
+        <legend>2. Choose your flavours</legend>
+        <p class="pick-count" id="pick-count" aria-live="polite"></p>
+        <div class="flavours" id="flavour-list"></div>
+        <span class="err" id="err-flavours" role="alert"></span>
+      </fieldset>
+
       <div class="summary" id="summary" aria-live="polite">Choose a box to get started</div>
 
       <fieldset>
-        <legend>2. Your details</legend>
+        <legend>3. Your details</legend>
         <label class="f" id="f-name"><span>Name</span><input type="text" name="name" autocomplete="name" maxlength="80" required><span class="err" id="err-name" role="alert"></span></label>
         <label class="f" id="f-email"><span>Email</span><input type="email" name="email" autocomplete="email" inputmode="email" maxlength="254" required><span class="err" id="err-email" role="alert"></span></label>
       </fieldset>
 
       <fieldset>
-        <legend>3. Delivery or collection</legend>
+        <legend>4. Delivery or collection</legend>
         <div class="choices two">
           <label class="choice"><input type="radio" name="method" value="delivery"><span class="face"><span class="big">Delivery</span></span></label>
           <label class="choice"><input type="radio" name="method" value="collection"><span class="face"><span class="big">Collection</span></span></label>
@@ -78,7 +84,7 @@
       <p class="note" id="collection-note" hidden></p>
 
       <p class="form-err" id="form-err" role="alert" hidden></p>
-      <button class="btn" type="submit" id="submit">Place order</button>
+      <button class="btn" type="submit" id="submit">Pay now</button>
     </form>
   </section>
 
@@ -102,19 +108,19 @@
 
   <!-- SUCCESS -->
   <section id="view-success" class="card thanks center" hidden>
-    <p class="eyebrow">Order received</p>
+    <p class="eyebrow">Payment submitted</p>
     <h2><span class="tilt">Thank you!</span></h2>
     <span class="ref" id="ok-ref">LB-0000</span>
     <p id="ok-detail"></p>
     <p id="ok-note"></p>
-    <p style="margin-top:14px">A confirmation is on its way to <b id="ok-email"></b>.</p>
+    <p style="margin-top:14px">A confirmation will be emailed to <b id="ok-email"></b> once your payment clears.</p>
   </section>
 </main>
 
 <footer>
   <div class="rule"></div>
-  Lyle's Bakery &middot; Est. 2026 &middot; Cape Town
+  Fresh donuts &middot; Lyle's Bakery &middot; Est. 2026 &middot; Cape Town
 </footer>
-<script src="/app.js"></script>
+<script is:inline src="/app.js"></script>
 </body>
 </html>

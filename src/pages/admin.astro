@@ -22,27 +22,32 @@
     <div class="card">
       <p class="eyebrow">Current batch</p>
       <p style="margin:0 0 4px"><strong id="b-label" style="font-size:24px;color:var(--red)">–</strong> <span class="pill" id="b-state">–</span></p>
-      <p style="margin:0 0 14px"><b id="b-rem">0</b> donuts left &middot; <b id="b-orders">0</b> orders &middot; <b id="b-waitlist">0</b> on waitlist</p>
+      <p style="margin:0 0 14px"><b id="b-rem">0</b> donuts left &middot; <b id="b-orders">0</b> paid orders &middot; <b id="b-pending">0</b> being paid for &middot; <b id="b-waitlist">0</b> on waitlist</p>
       <div class="btns">
         <button class="btn small ghost" id="toggle-open"></button>
-        <button class="btn small ghost" id="set-rem">Change donuts left</button>
         <button class="btn small ghost" id="refresh">Refresh</button>
       </div>
+      <form id="stock-form" hidden style="margin-top:18px">
+        <p class="eyebrow">Donuts left per flavour</p>
+        <div class="stock-grid" id="stock-grid"></div>
+        <button class="btn small ghost" type="submit">Save donuts left</button>
+      </form>
     </div>
 
     <form id="open-form" class="card">
       <h2 class="sec">Open a new batch</h2>
       <div class="grid3">
         <label class="f"><span>Batch name</span><input type="text" id="o-label" placeholder="Saturday 15 Nov" maxlength="60"></label>
-        <label class="f"><span>Total donuts</span><input type="text" id="o-cap" inputmode="numeric" placeholder="120"></label>
       </div>
+      <p class="eyebrow">Donuts per flavour &middot; <span id="o-total">0</span> in total</p>
+      <div class="stock-grid" id="o-flavours"></div>
       <p class="note">This starts a fresh batch with its own order list. The order form switches on straight away.</p>
       <button class="btn" type="submit">Open batch</button>
     </form>
 
     <div class="card">
       <h2 class="sec">Orders <span id="o-count"></span></h2>
-      <div class="scroll"><table><thead><tr><th>Ref</th><th>Name</th><th>Order</th><th>How</th><th>Email</th><th>Placed</th></tr></thead><tbody id="orders"></tbody></table></div>
+      <div class="scroll"><table><thead><tr><th>Ref</th><th>Name</th><th>Order</th><th>Flavours</th><th>How</th><th>Email</th><th>Status</th><th>Placed</th></tr></thead><tbody id="orders"></tbody></table></div>
       <p id="no-orders" class="note" hidden>No orders in this batch yet.</p>
       <div class="btns"><button class="btn small ghost" id="csv-orders">Download orders CSV</button></div>
     </div>
@@ -62,7 +67,7 @@
     <p class="form-err" id="dash-err" hidden></p>
   </div>
 </main>
-<script>
+<script is:inline>
 (() => {
   const $ = (s) => document.querySelector(s);
   let token = sessionStorage.getItem('lyles-admin') || '', data = null;
@@ -86,17 +91,31 @@
     st.textContent = !b ? 'Not started' : b.open ? (d.remaining < 4 ? 'Sold out' : 'Open') : 'Closed';
     st.classList.toggle('low', !open);
     $('#b-rem').textContent = d.remaining;
+    const stock = Object.entries(d.stock || {});
+    $('#stock-form').hidden = !stock.length;
+    $('#stock-grid').innerHTML = stock.map(([f, n]) => field(f, n)).join('');
     $('#b-orders').textContent = d.orders.length;
+    $('#b-pending').textContent = d.pending || 0;
     $('#b-waitlist').textContent = d.waitlist.length;
     $('#toggle-open').textContent = b && b.open ? 'Close orders' : 'Reopen orders';
     $('#toggle-open').hidden = !b;
-    $('#orders').innerHTML = d.orders.slice().reverse().map((o) => `<tr><td><b>${esc(o.ref)}</b></td><td>${esc(o.name)}</td><td>${o.qty} × ${o.size}-box</td>
+    $('#orders').innerHTML = d.orders.slice().reverse().map((o) => `<tr><td><b>${esc(o.ref)}</b></td><td>${esc(o.name)}</td><td>${o.qty} × ${o.size}-box</td><td>${esc(mix(o))}</td>
       <td>${o.method === 'delivery' ? 'Delivery<br><small>' + esc([o.address.street, o.address.complex, o.address.suburb].filter(Boolean).join(', ')) + (o.address.instructions ? '<br>Note: ' + esc(o.address.instructions) : '') + '</small>' : 'Collection'}</td>
-      <td>${esc(o.email)}</td><td>${when(o.createdAt)}</td></tr>`).join('');
+      <td>${esc(o.email)}</td><td>${o.status === 'review' ? '<b>CHECK</b><br><small>' + esc(o.note) + '</small>' : 'Paid'}</td><td>${when(o.paidAt || o.createdAt)}</td></tr>`).join('');
     $('#no-orders').hidden = d.orders.length > 0;
     $('#wait').innerHTML = d.waitlist.map((w) => `<tr><td>${esc(w.email) || '–'}</td><td>${esc(w.phone) || '–'}</td><td>${when(w.createdAt)}</td></tr>`).join('');
     $('#no-wait').hidden = d.waitlist.length > 0;
   }
+
+  const field = (f, n) => `<label class="f"><span>${esc(f)}</span><input type="text" inputmode="numeric" data-flavour="${esc(f)}" value="${n}"></label>`;
+  const mix = (o) => Object.entries(o.flavours || {}).map(([f, n]) => `${n} ${f}`).join(', ');
+  const readGrid = (sel) => Object.fromEntries([...document.querySelectorAll(sel + ' input')].map((i) => [i.dataset.flavour, Number(i.value.trim() || 0)]));
+  const sumOpen = () => { $('#o-total').textContent = Object.values(readGrid('#o-flavours')).reduce((a, n) => a + (Number.isFinite(n) ? n : 0), 0); };
+  fetch('/data/site.json').then((r) => r.json()).then((site) => {
+    $('#o-flavours').innerHTML = Object.entries(site.defaultFlavours || {}).map(([f, n]) => field(f, n)).join('');
+    sumOpen();
+  }).catch(() => err('Could not load the flavour list (data/site.json).'));
+  $('#o-flavours').addEventListener('input', sumOpen);
 
   async function load() {
     try {
@@ -118,13 +137,13 @@
   $('#login').addEventListener('submit', (e) => { e.preventDefault(); token = $('#token').value; sessionStorage.setItem('lyles-admin', token); load(); });
   $('#refresh').onclick = load;
   $('#toggle-open').onclick = () => act({ action: 'setOpen', open: !(data.batch && data.batch.open) });
-  $('#set-rem').onclick = () => { const v = prompt('How many donuts are left to sell?', data.remaining); if (v !== null) act({ action: 'setRemaining', remaining: Number(v) }); };
-  $('#open-form').addEventListener('submit', (e) => { e.preventDefault(); act({ action: 'open', label: $('#o-label').value, capacity: Number($('#o-cap').value) }); });
+  $('#stock-form').addEventListener('submit', (e) => { e.preventDefault(); act({ action: 'setStock', stock: readGrid('#stock-grid') }); });
+  $('#open-form').addEventListener('submit', (e) => { e.preventDefault(); if (data.batch && data.batch.open && !confirm('This replaces the current batch and its stock. Open a new batch?')) return; act({ action: 'open', label: $('#o-label').value, flavours: readGrid('#o-flavours') }); });
   $('#notify').onclick = () => { if (confirm('Email everyone on the waitlist that a new batch is open?')) act({ action: 'notify' }, (r) => `Emailed ${r.emailed} people.`); };
   $('#clear-wait').onclick = () => { if (confirm('Clear the whole waitlist? This cannot be undone.')) act({ action: 'clearWaitlist' }); };
   $('#copy-wa').onclick = async () => { const n = data.waitlist.map((w) => w.phone).filter(Boolean).join('\n'); try { await navigator.clipboard.writeText(n); alert(`Copied ${n ? n.split('\n').length : 0} numbers.`); } catch { prompt('Copy these numbers:', n.replace(/\n/g, ', ')); } };
   $('#csv-wait').onclick = () => download('lyles-waitlist.csv', csv([['Email', 'WhatsApp', 'Signed up'], ...data.waitlist.map((w) => [w.email, w.phone, w.createdAt])]));
-  $('#csv-orders').onclick = () => download('lyles-orders.csv', csv([['Ref', 'Name', 'Email', 'Box', 'Qty', 'Donuts', 'Method', 'Street', 'Complex', 'Suburb', 'Notes', 'Total', 'Placed'], ...data.orders.map((o) => [o.ref, o.name, o.email, o.size, o.qty, o.donuts, o.method, o.address && o.address.street, o.address && o.address.complex, o.address && o.address.suburb, o.address && o.address.instructions, o.total, o.createdAt])]));
+  $('#csv-orders').onclick = () => download('lyles-orders.csv', csv([['Ref', 'Name', 'Email', 'Box', 'Qty', 'Donuts', 'Flavours', 'Status', 'Paid (R)', 'Payment id', 'Method', 'Street', 'Complex', 'Suburb', 'Notes', 'Total', 'Placed'], ...data.orders.map((o) => [o.ref, o.name, o.email, o.size, o.qty, o.donuts, mix(o), o.status, o.paidAmount != null ? o.paidAmount / 100 : '', o.paymentId, o.method, o.address && o.address.street, o.address && o.address.complex, o.address && o.address.suburb, o.address && o.address.instructions, o.total, o.createdAt])]));
   if (token) load();
 })();
 </script>

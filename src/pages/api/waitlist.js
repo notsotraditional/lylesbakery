@@ -1,10 +1,11 @@
-const { cmd, getBatch } = require('./_lib/redis');
-const { clean, EMAIL_RE, normPhone, readBody, send } = require('./_lib/util');
+import { cmd, getBatch } from '../../lib/redis.js';
+import { clean, EMAIL_RE, normPhone, readBody, send } from '../../lib/util.js';
 
-module.exports = async (req, res) => {
-  if (req.method !== 'POST') return send(res, 405, { error: 'method_not_allowed' });
-  const b = readBody(req);
-  if (clean(b.company, 100)) return send(res, 200, { ok: true });
+export const prerender = false;
+
+export async function POST({ request }) {
+  const b = await readBody(request);
+  if (clean(b.company, 100)) return send(200, { ok: true });
 
   const errors = {};
   const rawEmail = clean(b.email, 254).toLowerCase();
@@ -14,7 +15,7 @@ module.exports = async (req, res) => {
   if (rawEmail && !email) errors.email = 'That email address does not look right.';
   if (rawPhone && !phone) errors.phone = 'Please enter a valid WhatsApp number, e.g. 082 123 4567.';
   if (!rawEmail && !rawPhone) errors.email = 'Please add your email, your WhatsApp number, or both.';
-  if (Object.keys(errors).length) return send(res, 422, { error: 'invalid', errors });
+  if (Object.keys(errors).length) return send(422, { error: 'invalid', errors });
 
   try {
     const keys = [email && 'e:' + email, phone && 'p:' + phone].filter(Boolean);
@@ -24,9 +25,11 @@ module.exports = async (req, res) => {
       const { cfg } = await getBatch();
       await cmd('RPUSH', 'waitlist', { email, phone: phone || '', createdAt: new Date().toISOString(), afterBatch: cfg ? cfg.id : 0 });
     }
-    send(res, 200, { ok: true });
+    return send(200, { ok: true });
   } catch (e) {
     console.error('waitlist_failed', e);
-    send(res, 500, { error: 'server_error' });
+    return send(500, { error: 'server_error' });
   }
-};
+}
+
+export const ALL = () => send(405, { error: 'method_not_allowed' });

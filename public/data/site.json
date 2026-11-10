@@ -3,6 +3,7 @@
   "prices": { "4": null, "6": null, "12": null },
   "maxBoxesPerOrder": 5,
   "lowStockAt": 24,
+  "defaultFlavours": { "Cream": 10, "Custard": 10, "Berliners": 10, "Jam": 10, "Chocolate ganache": 10 },
   "collectionNote": "Collection is in Cape Town. We'll email you the exact pick-up address and time once your order is confirmed.",
-  "afterOrderNote": "We'll email you shortly to confirm your order and share payment details."
+  "afterOrderNote": "Your payment is being confirmed. You'll get an email as soon as it clears."
 }

@@ -3,5 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "description": "Order site for Lyle's Bakery",
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "dependencies": {
+    "@astrojs/vercel": "^11.0.20",
+    "astro": "^7.4.8",
+    "cookie": "^2.0.2"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  }
 }
